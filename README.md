@@ -44,7 +44,7 @@ Open http://localhost:3000. Data is saved to `data/db.json` (not committed). If 
 
 Any Node 18+ host works.
 
-**Vercel**: import the repo, then add an Upstash Redis store from the Vercel Marketplace (Storage tab) so `KV_REST_API_URL` and `KV_REST_API_TOKEN` are set. Also set `ADMIN_PASSWORD` and `SESSION_SECRET` (any long random string). Without the Redis store the site refuses to start, because Vercel cannot save files.
+**Vercel**: import the repo and keep the **Express** preset, with no build settings changed (Vercel serves `public/` and runs `server.js`). Before or after the first deploy, open the project's **Storage** tab and add an **Upstash Redis** (KV) store; that sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Under **Settings → Environment Variables** add `ADMIN_PASSWORD` and `SESSION_SECRET` (any long random string), then redeploy. Without the Redis store the login page shows a message saying the database is missing, because Vercel cannot save files.
 
 **Render, Railway, Fly, a school server**: `npm install && npm start`. Either attach a persistent disk and set `DATA_FILE` to a path on it, or set the Upstash variables above (`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` also work).
 

@@ -95,7 +95,8 @@
   // ---------- login ----------
   async function renderLogin(mode = 'student') {
     let roster = [];
-    try { roster = await api('GET', '/api/roster'); } catch {}
+    let setupError = '';
+    try { roster = await api('GET', '/api/roster'); } catch (e) { setupError = e.message; }
     $app.innerHTML = `
       <div class="login-wrap">
         <form class="login-card" autocomplete="off">
@@ -122,7 +123,7 @@
               <label class="field">Guide password
                 <input name="password" type="password" required autocomplete="current-password">
               </label>`}
-            <div class="err"></div>
+            <div class="err">${esc(setupError)}</div>
             <button class="btn primary" type="submit" style="justify-content:center;padding:11px">Log in</button>
           </div>
         </form>
