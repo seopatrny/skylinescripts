@@ -1,0 +1,6 @@
+node_modules/
+data/db.json
+.env
+.vercel
+data/*.private.js
+data/*.private.json

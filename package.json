@@ -1,0 +1,20 @@
+{
+  "name": "skylinescripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Skyline Speakers workshop: student tour scripts, admin run-of-show and river map.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "postinstall": "node -e \"require('fs').copyFileSync(require.resolve('sortablejs/Sortable.min.js'),'public/vendor/Sortable.min.js')\"",
+    "make-import": "node scripts/make-import.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "sortablejs": "^1.15.6"
+  }
+}
