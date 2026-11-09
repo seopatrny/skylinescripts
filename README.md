@@ -7,6 +7,7 @@ A small website for the Skyline Speakers workshop at Alpha School Chicago.
   - **Tour & river**: a map of the Chicago River (Main, North and South Branches, Goose Island, the lakefront) with every speaker's stop pinned and numbered in tour order, next to the run of show. Drag stops between legs and up or down to change the order; the numbers and pins update. Each leg shows speaking time against its time budget. Click any stop to read or edit the script. "+ Stop on map" adds a new stop (building, bridge or story) by clicking the river.
   - **Groups**: drag students between groups (WL/LL, L1, L2, MS, or new ones), set each group's color and per-speaker time goal, and spotlight a group's stops on the river map.
   - **Students**: roster with group, PIN (show or reset), stops, time, status, last edit. Add or remove students. Download a JSON backup.
+  - **Resources**: every building with its photo, facts, year, architect and stories from a volunteer river tour guide, searchable. Students see the same stories in a 📚 Resources section beside each stop and in "Browse all buildings & stories".
   - **Print**: the full run of show with every script in tour order, and printable login cards with each student's PIN.
 
 ## Student data stays out of this repo
@@ -38,6 +39,8 @@ ADMIN_PASSWORD=choose-a-password npm start
 Open http://localhost:3000. Data is saved to `data/db.json` (not committed). If you do not set `ADMIN_PASSWORD`, a random one is generated on first start and printed in the terminal.
 
 ## Deploy
+
+`main` is the production branch: point your host (Vercel, Render, …) at `main`, and anything merged or pushed to `main` goes live. Do feature work on other branches.
 
 Any Node 18+ host works.
 

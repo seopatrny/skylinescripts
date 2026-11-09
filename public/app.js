@@ -289,6 +289,7 @@
           ${student.segments.map((seg) => segCard(seg, group, tour[seg.id])).join('') || `<div class="note">You don't have a stop yet. Add one to start writing.</div>`}
         </div>
         <button class="btn primary" data-act="add">+ Add a stop</button>
+        <button class="btn" data-act="library">📚 Browse all buildings & stories</button>
         ${student.earlierDrafts?.length ? `<div style="margin-top:22px">${student.earlierDrafts.map((d) => `
           <details class="drafts"><summary>Earlier draft: ${esc(d.label)}</summary><pre>${esc(d.text)}</pre></details>`).join('')}</div>` : ''}
         <div class="panel" style="margin-top:22px;padding:14px 18px">
@@ -301,6 +302,7 @@
         </div>
       </main>`;
     $app.querySelector('[data-act="logout"]').onclick = logout;
+    $app.querySelector('[data-act="library"]').onclick = openLibrary;
     $app.querySelector('[data-act="add"]').onclick = async () => {
       try {
         state.my.student = await api('POST', '/api/my/segments', {});
@@ -337,11 +339,56 @@
     }
   }
 
+  // Year, architect and stories for a stop (from the volunteer tour guide's sheet).
+  function resourcesHTML(stop, open) {
+    const r = stop && stop.resources;
+    if (!r) return '';
+    const meta = [r.year && `Built ${r.year}`, r.architect && `Architect: ${r.architect}`].filter(Boolean).join(' · ');
+    return `<details class="resources"${open ? ' open' : ''}><summary>📚 Resources${r.stories.length ? ` · ${r.stories.length} stor${r.stories.length === 1 ? 'y' : 'ies'}` : ''}</summary>
+      ${meta ? `<div class="res-meta">${esc(meta)}</div>` : ''}
+      ${r.stories.map((t) => `<p>${esc(t)}</p>`).join('')}
+      <div class="res-src">Source: ${esc(r.source)}. Double-check facts before you use them.</div></details>`;
+  }
+
+  // Every building and story with photo, facts and resources; used by students and guides.
+  function resourcesLibrary(el) {
+    const branches = { main: 'Main Branch', north: 'North Branch', south: 'South Branch' };
+    const paint = (q) => {
+      const term = q.trim().toLowerCase();
+      const list = state.catalog.stops.filter((st) => !term || JSON.stringify([st.name, st.facts, st.address, st.resources]).toLowerCase().includes(term));
+      el.querySelector('.lib-list').innerHTML = Object.entries(branches).map(([k, label]) => {
+        const items = list.filter((st) => (st.branch || 'main') === k);
+        if (!items.length) return '';
+        return `<h3 class="lib-branch">${label}</h3>` + items.map((st) => `<article class="lib-item">
+          ${st.photo ? `<img src="/photos/${esc(st.photo)}" alt="" loading="lazy">` : `<div class="noimg small">${esc(st.short || st.name)}</div>`}
+          <div><h4>${esc(st.name)}${st.map ? ` <span class="muted">· map ${esc(st.map)}</span>` : ''}</h4>
+            <div class="muted" style="font-size:13px">${esc([st.side, st.address].filter(Boolean).join(' · '))}</div>
+            <p style="margin:6px 0">${esc(st.facts || '')}</p>${resourcesHTML(st, !!term)}</div></article>`).join('');
+      }).join('') || '<p class="muted">Nothing matches that search.</p>';
+    };
+    el.innerHTML = `<input type="text" class="lib-search" placeholder="Search buildings and stories (try: Ferris Bueller, roller skates, wolves)…"><div class="lib-list"></div>`;
+    el.querySelector('.lib-search').addEventListener('input', (e) => paint(e.target.value));
+    paint('');
+  }
+
+  function openLibrary() {
+    const wrap = document.createElement('div');
+    wrap.className = 'overlay';
+    wrap.innerHTML = `<div class="drawer" role="dialog" aria-label="Resources"><header><h2>Resources: every building</h2><button class="btn small" data-x="close">Close</button></header><div class="body lib"></div></div>`;
+    document.body.appendChild(wrap);
+    resourcesLibrary(wrap.querySelector('.lib'));
+    const close = () => { wrap.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    wrap.addEventListener('click', (e) => { if (e.target === wrap || e.target.dataset.x === 'close') close(); });
+    wrap.querySelector('.lib-search').focus();
+  }
+
   function segSide(seg, pos) {
     const stop = stopById(seg.stopId);
     return `<aside class="seg-side">
       ${stop?.photo ? `<img src="/photos/${esc(stop.photo)}" alt="${esc(stop.name)}" loading="lazy">` : `<div class="noimg">${esc(stop ? stop.name : 'Pick your stop')}</div>`}
-      ${stop ? `<h3>${esc(stop.name)}</h3><div class="muted">${esc([stop.side, stop.address].filter(Boolean).join(' · '))}${stop.map ? ` · map ${esc(stop.map)}` : ''}</div><div>${esc(stop.facts || '')}</div>` : '<div class="muted">Choose a building or story from the list to see its photo and facts.</div>'}
+      ${stop ? `<h3>${esc(stop.name)}</h3><div class="muted">${esc([stop.side, stop.address].filter(Boolean).join(' · '))}${stop.map ? ` · map ${esc(stop.map)}` : ''}</div><div>${esc(stop.facts || '')}</div>${resourcesHTML(stop)}` : '<div class="muted">Choose a building or story from the list to see its photo and facts.</div>'}
       ${pos ? `<div class="tourpos">You are stop <b>#${pos.position}</b> of ${pos.total} · ${esc(pos.leg)}<br>
         ${pos.before ? `Before you: ${esc(pos.before.name)} (${esc(pos.before.title)})<br>` : 'You go first!<br>'}
         ${pos.after ? `After you: ${esc(pos.after.name)} (${esc(pos.after.title)})` : 'You go last!'}</div>` : `<div class="tourpos muted">Your guide hasn't placed this stop on the tour yet.</div>`}
@@ -383,7 +430,7 @@
   }
 
   function renderAdmin() {
-    const tabs = [['tour', 'Tour & river'], ['groups', 'Groups'], ['students', 'Students'], ['print', 'Print']];
+    const tabs = [['tour', 'Tour & river'], ['groups', 'Groups'], ['students', 'Students'], ['resources', 'Resources'], ['print', 'Print']];
     $app.innerHTML = `${topbar(`<nav>${tabs.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'on' : ''}">${l}</button>`).join('')}</nav>`, 'Guide')}<main id="view"></main>`;
     $app.querySelector('[data-act="logout"]').onclick = logout;
     $app.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { location.hash = b.dataset.tab; }));
@@ -391,6 +438,7 @@
     if (state.tab === 'groups') return renderGroups(view);
     if (state.tab === 'students') return renderStudents(view);
     if (state.tab === 'print') return renderPrint(view);
+    if (state.tab === 'resources') { view.innerHTML = '<div class="panel lib" style="padding:16px 20px;max-width:900px;margin:0 auto"></div>'; return resourcesLibrary(view.firstElementChild); }
     return renderTour(view);
   }
 

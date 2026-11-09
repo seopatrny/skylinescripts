@@ -3,7 +3,10 @@ const crypto = require('crypto');
 const express = require('express');
 const { createStore } = require('./lib/store');
 const auth = require('./lib/auth');
-const buildings = require('./data/buildings');
+const rawBuildings = require('./data/buildings');
+const resources = require('./data/resources');
+// Attach year / architect / stories to each stop for the Resources section.
+const buildings = rawBuildings.map((b) => (resources.byStop[b.id] ? { ...b, resources: { ...resources.byStop[b.id], source: resources.SOURCE } } : b));
 const { buildSeed, slug } = require('./data/seed');
 
 const store = createStore();

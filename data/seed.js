@@ -9,11 +9,16 @@
 // with no script yet are Unassigned. The admin can change all of it in the app.
 
 // Emails arrive hard-wrapped at ~76 characters. Rejoin lines inside a paragraph.
+// Section headings (HOOK, BUILDING 1: …) keep their own line.
+const HEADING = /^(TOUR INTRO|HOOK|FIND THE BUILDING|THE AMAZING STORY|LOOK CLOSELY|THE BIG FINISH|BUILDING \d+:.*)$/;
 function unwrap(text) {
   return text
     .trim()
     .split(/\n\s*\n/)
-    .map((p) => p.split('\n').map((l) => l.trim()).join(' '))
+    .map((p) => p.split('\n').map((l) => l.trim()).reduce((out, l, i, all) => {
+      if (i === 0) return l;
+      return out + (HEADING.test(all[i - 1]) ? '\n' : ' ') + l;
+    }, ''))
     .join('\n\n');
 }
 
