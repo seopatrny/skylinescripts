@@ -33,7 +33,7 @@ function init() {
           sessionSecret: auth.randomSecret(),
           generatedAdminPassword: process.env.ADMIN_PASSWORD ? null : adminPassword,
         };
-        for (const s of seed.students) await store.set(`student:${s.id}`, { ...s, pin: auth.newPin() });
+        for (const s of seed.students) await store.set(`student:${s.id}`, { ...s, pin: auth.defaultPassword(s.name) });
         await store.set('config', config);
         if (config.generatedAdminPassword) {
           console.log(`\n  No ADMIN_PASSWORD set. Generated admin password: ${config.generatedAdminPassword}\n`);
@@ -107,11 +107,11 @@ app.post('/api/login', wrap(async (req, res) => {
     return res.json({ role: 'admin' });
   }
   const key = `${studentId}|${ip}`;
-  if (auth.throttled(key)) return res.status(429).json({ error: 'Too many tries. Wait two minutes, or ask your guide for your PIN.' });
+  if (auth.throttled(key)) return res.status(429).json({ error: 'Too many tries. Wait two minutes, or ask your guide for your password.' });
   const student = studentId && req.config.studentIds.includes(studentId) ? await getStudent(studentId) : null;
-  if (!student || !pin || !auth.safeEqual(String(pin).trim(), student.pin)) {
+  if (!student || !pin || !auth.safeEqual(auth.normalizePassword(pin), auth.normalizePassword(student.pin))) {
     auth.recordFailure(key);
-    return res.status(401).json({ error: 'That PIN does not match. Ask your guide if you forgot it.' });
+    return res.status(401).json({ error: 'That password does not match. It is your last name and 2026, like smith2026. Ask your guide if it still does not work.' });
   }
   auth.clearFailures(key);
   auth.setSession(req, res, { role: 'student', studentId }, secret);
@@ -184,7 +184,7 @@ async function editSegment(req, res, studentId) {
 async function addSegment(req, res, studentId) {
   const st = await getStudent(studentId);
   if (!st) return res.status(404).json({ error: 'Student not found.' });
-  if (st.segments.length >= 6) return res.status(400).json({ error: 'That is plenty of stops for one speaker.' });
+  if (st.segments.length >= 8) return res.status(400).json({ error: 'That is plenty of stops for one speaker (8 max).' });
   const seg = { id: `${st.id}-${crypto.randomBytes(3).toString('hex')}`, stopId: null, title: 'New stop', text: '', updatedAt: new Date().toISOString() };
   applySegmentEdit(seg, req.body || {}, stopsOf(req.config));
   st.segments.push(seg);
@@ -250,12 +250,12 @@ app.post('/api/admin/import', needAdmin, wrap(async (req, res) => {
       group: clip(raw.group || 'none', 40),
       note: clip(raw.note || '', 2000),
       earlierDrafts: Array.isArray(raw.earlierDrafts) ? raw.earlierDrafts.slice(0, 10) : [],
-      segments: (Array.isArray(raw.segments) ? raw.segments : []).slice(0, 6).map((s, i) => ({
+      segments: (Array.isArray(raw.segments) ? raw.segments : []).slice(0, 8).map((s, i) => ({
         id: clip(s.id, 80) || `${id}-${i + 1}`, stopId: s.stopId || null, title: clip(s.title || '', 140), text: clip(s.text || '', 20000), updatedAt: s.updatedAt || new Date().toISOString(),
       })),
       status: ['not-started', 'draft', 'ready'].includes(raw.status) ? raw.status : 'draft',
       updatedAt: raw.updatedAt || new Date().toISOString(),
-      pin: /^\d{4,8}$/.test(String(raw.pin || '')) ? String(raw.pin) : auth.newPin(),
+      pin: typeof raw.pin === 'string' && raw.pin.trim() ? clip(raw.pin.trim(), 40) : auth.defaultPassword(raw.name),
     });
   }
   for (const old of config.studentIds) if (!ids.includes(old)) await store.del(`student:${old}`);
@@ -313,7 +313,7 @@ app.post('/api/admin/students', needAdmin, wrap(async (req, res) => {
   while (config.studentIds.includes(id)) id += '-2';
   const st = {
     id, name, email: clip(req.body.email || '', 120), group: req.body.group || 'none', note: '', earlierDrafts: [],
-    segments: [], status: 'not-started', updatedAt: new Date().toISOString(), pin: auth.newPin(),
+    segments: [], status: 'not-started', updatedAt: new Date().toISOString(), pin: auth.defaultPassword(name),
   };
   await saveStudent(st);
   config.studentIds.push(id);
@@ -330,8 +330,8 @@ app.put('/api/admin/students/:id', needAdmin, wrap(async (req, res) => {
   if (b.group !== undefined && req.config.groups.some((g) => g.id === b.group)) st.group = b.group;
   if (b.note !== undefined) st.note = clip(b.note, 2000);
   if (['not-started', 'draft', 'ready'].includes(b.status)) st.status = b.status;
-  if (b.pin !== undefined && /^\d{4,8}$/.test(String(b.pin))) st.pin = String(b.pin);
-  if (b.resetPin) st.pin = auth.newPin();
+  if (typeof b.pin === 'string' && b.pin.trim().length >= 3) st.pin = clip(b.pin.trim(), 40);
+  if (b.resetPin) st.pin = auth.defaultPassword(st.name);
   await saveStudent(st);
   res.json(st);
 }));
@@ -347,6 +347,16 @@ app.delete('/api/admin/students/:id', needAdmin, wrap(async (req, res) => {
   await saveConfig(config);
   await store.del(`student:${req.params.id}`);
   res.json({ ok: true });
+}));
+
+// Set every student's password back to the default (last name + 2026).
+app.post('/api/admin/reset-passwords', needAdmin, wrap(async (req, res) => {
+  const students = await allStudents(req.config);
+  for (const st of students) {
+    st.pin = auth.defaultPassword(st.name);
+    await saveStudent(st);
+  }
+  res.json({ count: students.length });
 }));
 
 app.put('/api/admin/students/:id/segments/:segId', needAdmin, wrap((req, res) => editSegment(req, res, req.params.id)));

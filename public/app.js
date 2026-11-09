@@ -44,7 +44,7 @@
   }
   const LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 24h4V12h3v12h3V6h3v18h3V14h3v10h4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M2 28c4-2 8 2 14 0s10 2 14 0" stroke="#50c3e6" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>`;
 
-  const state = { me: undefined, catalog: null, my: null, admin: null, tab: 'tour', hidden: new Set(), focusGroup: null, showPins: false };
+  const state = { me: undefined, catalog: null, my: null, admin: null, tab: 'tour', hidden: new Set(), focusGroup: null };
   const stopById = (id) => state.catalog && state.catalog.stops.find((s) => s.id === id);
   const groupById = (id) => state.catalog && (state.catalog.groups.find((g) => g.id === id) || state.catalog.groups.find((g) => g.id === 'none'));
 
@@ -117,8 +117,8 @@
                   ${roster.map((r) => `<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('')}
                 </select>
               </label>
-              <label class="field">Your PIN
-                <input class="pin-input" name="pin" type="password" inputmode="numeric" maxlength="8" placeholder="••••" required>
+              <label class="field">Your password
+                <input class="pin-input" name="pin" type="password" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="lastname2026" required>
               </label>` : `
               <label class="field">Guide password
                 <input name="password" type="password" required autocomplete="current-password">
@@ -715,22 +715,22 @@
     const list = [...state.admin.students].sort((a, b) => a.name.localeCompare(b.name));
     view.innerHTML = `
       <div class="panel">
-        <div class="panel-head"><h2>Students (${list.length})</h2><span class="muted" style="font-size:13px">Students log in by picking their name and typing their PIN.</span>
+        <div class="panel-head"><h2>Students (${list.length})</h2><span class="muted" style="font-size:13px">Students pick their name and type their password (last name + 2026). Click a password to change it.</span>
           <span style="flex:1"></span>
-          <button class="btn small" data-act="pins">${state.showPins ? 'Hide PINs' : 'Show PINs'}</button>
+          <button class="btn small" data-act="resetall" title="Set every password to last name + 2026">Reset all passwords</button>
           <button class="btn small" data-act="cards">Print login cards</button>
           <a class="btn small" href="/api/admin/export" download>Download backup</a>
           <label class="btn small" title="Load a backup or roster file">Import…<input type="file" accept=".json,application/json" data-act="import" hidden></label></div>
         <div class="table-wrap"><table class="students">
-          <thead><tr><th>Name</th><th>Group</th><th>PIN</th><th>Stops</th><th>Time</th><th>Status</th><th>Last edit</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Group</th><th>Password</th><th>Stops</th><th>Time</th><th>Status</th><th>Last edit</th><th></th></tr></thead>
           <tbody>${list.map((s) => {
             const t = s.segments.reduce((a, x) => a + secs(x.text), 0);
             const g = groupById(s.group);
             return `<tr data-sid="${esc(s.id)}">
               <td><b>${esc(s.name)}</b><div class="muted" style="font-size:12.5px">${esc(s.email || '')}</div></td>
-              <td><span class="dot" style="background:${esc(g.color)}"></span> <select data-sf="group">${state.admin.groups.map((x) => `<option value="${esc(x.id)}"${x.id === s.group ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></td>
-              <td><span class="pin">${state.showPins ? esc(s.pin) : '••••'}</span> <button class="btn small ghost" data-act="reset" title="Make a new PIN">↻</button></td>
-              <td>${s.segments.map((x) => esc(stopById(x.stopId)?.short || x.title)).join(', ') || '<span class="muted">none</span>'}</td>
+              <td style="white-space:nowrap"><span class="dot" style="background:${esc(g.color)}"></span> <select data-sf="group">${state.admin.groups.map((x) => `<option value="${esc(x.id)}"${x.id === s.group ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></td>
+              <td style="white-space:nowrap"><button type="button" class="pin pin-edit" data-act="setpw" title="Change password">${esc(s.pin)}</button> <button class="btn small ghost" data-act="reset" title="Reset to last name + 2026">↻</button></td>
+              <td class="stops-cell">${stopPickButton(s)}</td>
               <td style="font-variant-numeric:tabular-nums">${fmt(t)} <span class="muted">/ ${fmt(g.targetSeconds)}</span></td>
               <td><select data-sf="status">${['not-started', 'draft', 'ready'].map((x) => `<option${x === s.status ? ' selected' : ''} value="${x}">${x.replace('-', ' ')}</option>`).join('')}</select></td>
               <td class="muted">${esc(ago(s.updatedAt))}</td>
@@ -746,7 +746,15 @@
         </form>
       </div>
       <p class="muted" style="font-size:13px">Data is stored in ${state.admin.storage === 'redis' ? 'the hosted key-value database' : 'a file on this server (data/db.json)'}.</p>`;
-    view.querySelector('[data-act="pins"]').onclick = () => { state.showPins = !state.showPins; renderStudents(view); };
+    view.querySelector('[data-act="resetall"]').onclick = async () => {
+      if (!confirm('Set EVERY student\'s password to their last name + 2026 (for example smith2026)?')) return;
+      try {
+        const r = await api('POST', '/api/admin/reset-passwords');
+        await loadAdmin();
+        renderStudents(view);
+        toast(`Reset ${r.count} passwords`);
+      } catch (ex) { toast(ex.message); }
+    };
     view.querySelector('[data-act="cards"]').onclick = () => { state.printMode = 'cards'; location.hash = 'print'; };
     view.querySelector('[data-act="import"]').addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -776,12 +784,21 @@
       if (!btn || !row) return;
       const st = state.admin.students.find((s) => s.id === row.dataset.sid);
       if (btn.dataset.act === 'open') openStudentDrawer(st.id);
+      if (btn.dataset.act === 'stops') openStopPicker(btn, st, () => { row.querySelector('.stops-cell').innerHTML = stopPickButton(st); });
       if (btn.dataset.act === 'reset') {
-        if (!confirm(`Give ${st.name} a new PIN? The old one will stop working.`)) return;
         Object.assign(st, await api('PUT', `/api/admin/students/${st.id}`, { resetPin: true }));
-        state.showPins = true;
         renderStudents(view);
-        toast(`New PIN for ${firstName(st.name)}: ${st.pin}`);
+        toast(`${firstName(st.name)}'s password: ${st.pin}`);
+      }
+      if (btn.dataset.act === 'setpw') {
+        const pw = prompt(`New password for ${st.name} (at least 3 characters):`, st.pin);
+        if (pw == null || pw.trim() === st.pin) return;
+        if (pw.trim().length < 3) return toast('Passwords need at least 3 characters.');
+        try {
+          Object.assign(st, await api('PUT', `/api/admin/students/${st.id}`, { pin: pw.trim() }));
+          renderStudents(view);
+          toast(`${firstName(st.name)}'s password: ${st.pin}`);
+        } catch (ex) { toast(ex.message); }
       }
       if (btn.dataset.act === 'del') {
         if (!confirm(`Remove ${st.name} and all of their scripts? This cannot be undone.`)) return;
@@ -796,10 +813,103 @@
       try {
         const st = await api('POST', '/api/admin/students', fd);
         await loadAdmin();
-        state.showPins = true;
         renderStudents(view);
-        toast(`Added ${st.name}. PIN ${st.pin}`);
+        toast(`Added ${st.name}. Password: ${st.pin}`);
       } catch (ex) { toast(ex.message); }
+    });
+  }
+
+  // ---------- stop assignment (multi-select) ----------
+  function stopPickButton(st) {
+    const chips = st.segments.map((x) => `<span class="sp-chip${x.text ? ' has-text' : ''}" title="${x.text ? 'Has a script' : 'No script yet'}">${esc(stopById(x.stopId)?.short || x.title || 'Untitled stop')}</span>`).join('');
+    return `<button type="button" class="stoppick-btn" data-act="stops" aria-haspopup="listbox">${chips || '<span class="muted">Assign stops</span>'}<span class="sp-caret">▾</span></button>`;
+  }
+
+  // Checklist of every stop; ticking assigns it to the student, unticking removes it.
+  function openStopPicker(anchor, st, onChange) {
+    document.querySelector('.stoppick-pop')?.remove();
+    const pop = document.createElement('div');
+    pop.className = 'stoppick-pop';
+    pop.setAttribute('role', 'dialog');
+    pop.setAttribute('aria-label', `Stops for ${st.name}`);
+    const takenBy = () => {
+      const m = new Map();
+      for (const o of state.admin.students) {
+        if (o.id === st.id) continue;
+        for (const x of o.segments) if (x.stopId) m.set(x.stopId, [...(m.get(x.stopId) || []), firstName(o.name)]);
+      }
+      return m;
+    };
+    const branches = { main: 'Main Branch', north: 'North Branch', south: 'South Branch' };
+    let term = '';
+    const paint = () => {
+      const taken = takenBy();
+      const mine = new Set(st.segments.map((x) => x.stopId).filter(Boolean));
+      const loose = st.segments.filter((x) => !x.stopId);
+      const match = (x) => !term || x.name.toLowerCase().includes(term);
+      pop.querySelector('.sp-list').innerHTML =
+        (loose.length && !term ? `<div class="sp-group">Stops with no building yet</div>` + loose.map((x) => `
+          <label class="sp-opt"><input type="checkbox" checked data-seg="${esc(x.id)}"><span>${esc(x.title || 'Untitled stop')}${x.text ? ' <em>· has script</em>' : ''}</span></label>`).join('') : '') +
+        Object.entries(branches).map(([k, label]) => {
+          const items = state.admin.stops.filter((x) => (x.branch || 'main') === k && match(x));
+          if (!items.length) return '';
+          return `<div class="sp-group">${label}</div>` + items.map((x) => {
+            const who = taken.get(x.id);
+            return `<label class="sp-opt${mine.has(x.id) ? ' on' : ''}"><input type="checkbox" data-stop="${esc(x.id)}"${mine.has(x.id) ? ' checked' : ''}>
+              <span>${esc(x.name)}${x.map ? ` <small class="muted">(${esc(x.map)})</small>` : ''}${who ? ` <small class="sp-taken">· ${esc(who.join(', '))}</small>` : ''}</span></label>`;
+          }).join('');
+        }).join('') || '<div class="muted" style="padding:10px">No stops match.</div>';
+    };
+    pop.innerHTML = `<div class="sp-head"><b>${esc(firstName(st.name))}'s stops</b><button type="button" class="btn small" data-x="done">Done</button></div>
+      <input type="text" class="sp-search" placeholder="Search stops…" aria-label="Search stops">
+      <div class="sp-list" role="listbox" aria-multiselectable="true"></div>
+      <div class="sp-foot muted">New stops land in "Not on the tour yet" on the Tour tab. Names after a stop show who else has it.</div>`;
+    document.body.appendChild(pop);
+    paint();
+    const r = anchor.getBoundingClientRect();
+    const w = Math.min(380, window.innerWidth - 32);
+    pop.style.width = `${w}px`;
+    pop.style.left = `${Math.max(16, Math.min(r.left + window.scrollX, window.scrollX + window.innerWidth - w - 16))}px`;
+    pop.style.top = `${r.bottom + window.scrollY + 6}px`;
+    pop.querySelector('.sp-search').focus();
+
+    const close = () => {
+      pop.remove();
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('keydown', onKey);
+    };
+    const outside = (e) => { if (!pop.contains(e.target) && !anchor.contains(e.target)) close(); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('pointerdown', outside, true);
+    document.addEventListener('keydown', onKey);
+    pop.querySelector('[data-x="done"]').onclick = close;
+    pop.querySelector('.sp-search').addEventListener('input', (e) => { term = e.target.value.trim().toLowerCase(); paint(); });
+
+    pop.addEventListener('change', async (e) => {
+      const box = e.target;
+      if (box.type !== 'checkbox') return;
+      box.disabled = true;
+      try {
+        if (box.checked && box.dataset.stop) {
+          const stop = stopById(box.dataset.stop);
+          Object.assign(st, await api('POST', `/api/admin/students/${st.id}/segments`, { stopId: stop.id, title: stop.name }));
+          toast(`${stop.short || stop.name} → ${firstName(st.name)}`);
+        } else {
+          const seg = box.dataset.seg ? st.segments.find((x) => x.id === box.dataset.seg) : st.segments.find((x) => x.stopId === box.dataset.stop);
+          if (seg) {
+            if (seg.text && !confirm(`${st.name} already wrote a script for "${seg.title}". Remove the stop and delete that script?`)) { box.checked = true; return; }
+            Object.assign(st, await api('DELETE', `/api/admin/students/${st.id}/segments/${encodeURIComponent(seg.id)}`));
+            for (const k of Object.keys(state.admin.layout)) state.admin.layout[k] = state.admin.layout[k].filter((id) => id !== seg.id);
+          }
+        }
+        onChange();
+      } catch (ex) {
+        box.checked = !box.checked;
+        toast(ex.message);
+      } finally {
+        box.disabled = false;
+        paint();
+      }
     });
   }
 
@@ -812,7 +922,7 @@
     let body = '';
     if (mode === 'cards') {
       const list = [...state.admin.students].sort((a, b) => a.name.localeCompare(b.name));
-      body = `<h1>Skyline Speakers · login cards</h1><p class="muted">Go to ${esc(location.origin)} · pick your name · type your PIN</p>
+      body = `<h1>Skyline Speakers · login cards</h1><p class="muted">Go to ${esc(location.origin)} · pick your name · type your password</p>
         <div class="logincards">${list.map((s) => `<div class="logincard"><b>${esc(s.name)}</b><span class="muted" style="font-size:12px">${esc(location.host)}</span><div class="p">${esc(s.pin)}</div></div>`).join('')}</div>`;
     } else {
       const rows = [];

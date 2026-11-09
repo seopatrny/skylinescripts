@@ -2,13 +2,13 @@
 
 A small website for the Skyline Speakers workshop at Alpha School Chicago.
 
-- **Students** log in with their name and a 4-digit PIN, then write and edit their own tour stop scripts. Each stop shows the building photo, instructor facts, a time estimate against their group's goal, where they fall in the tour (who speaks before and after), and a full-screen ▶ Practice mode with a timer. Work saves as they type.
+- **Students** log in by picking their name and typing a password (their last name + 2026, like `smith2026`), then write and edit their own tour stop scripts. Each stop shows the building photo, instructor facts, a time estimate against their group's goal, where they fall in the tour (who speaks before and after), and a full-screen ▶ Practice mode with a timer. Work saves as they type.
 - **Guides (admin)** log in with a password and get:
   - **Tour & river**: a map of the Chicago River (Main, North and South Branches, Goose Island, the lakefront) with every speaker's stop pinned and numbered in tour order, next to the run of show. Drag stops between legs and up or down to change the order; the numbers and pins update. Each leg shows speaking time against its time budget. Click any stop to read or edit the script. "+ Stop on map" adds a new stop (building, bridge or story) by clicking the river.
   - **Groups**: drag students between groups (WL/LL, L1, L2, MS, or new ones), set each group's color and per-speaker time goal, and spotlight a group's stops on the river map.
-  - **Students**: roster with group, PIN (show or reset), stops, time, status, last edit. Add or remove students. Download a JSON backup.
+  - **Students**: roster with group, password (always visible; click to change, ↻ to reset, or reset everyone at once), stops (a multi-select dropdown to assign stops), time, status, last edit. Add or remove students. Download a JSON backup.
   - **Resources**: every building with its photo, facts, year, architect and stories from a volunteer river tour guide, searchable. Students see the same stories in a 📚 Resources section beside each stop and in "Browse all buildings & stories".
-  - **Print**: the full run of show with every script in tour order, and printable login cards with each student's PIN.
+  - **Print**: the full run of show with every script in tour order, and printable login cards with each student's password.
 
 ## Student data stays out of this repo
 
@@ -59,5 +59,5 @@ Any Node 18+ host works.
 
 ## Notes
 
-- PINs are stored as plain 4-digit codes so guides can look them up and print login cards. Six wrong tries lock that account for two minutes from that device.
+- Student passwords default to last name + 2026 (set `PASSWORD_SUFFIX` to change the 2026) and are stored as plain text so guides can see and print them. Capital letters don't matter when logging in. Because they are easy to guess, a student could log in as a classmate; change any password by clicking it on the Students tab. Six wrong tries lock that account for two minutes from that device.
 - Time estimates assume about 120 words per minute.
