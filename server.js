@@ -384,7 +384,7 @@ app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(__dirname, 'publi
 
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ error: 'Something went wrong on the server.' });
+  res.status(500).json({ error: err.expose ? err.message : 'Something went wrong on the server.' });
 });
 
 if (require.main === module) {
