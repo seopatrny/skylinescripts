@@ -498,7 +498,8 @@
           </div>
         </div>
         <div class="legs">
-          <section class="leg unscheduled"><div class="leg-head"><h3>Not on the tour yet</h3><span class="hint">Drag into a leg</span></div>
+          <section class="leg unscheduled"><div class="leg-head"><h3>Not on the tour yet</h3><span class="hint">Drag into a leg</span>
+              ${ix.unscheduled.length ? '<button class="btn small primary" data-act="autoplace" style="margin-left:auto" title="Put each stop in the leg where the boat passes it">Place new stops</button>' : ''}</div>
             <div class="slots" data-empty="Drag stops here" data-leg="__pool">${ix.unscheduled.map((id) => cardHTML(id, ix)).join('')}</div></section>
           ${state.admin.legs.map((leg) => {
             const t = legSecs(leg.id);
@@ -522,6 +523,8 @@
       s.classList.toggle('off');
       map.setPins(pinsFor(ix));
     }));
+    const autoBtn = view.querySelector('[data-act="autoplace"]');
+    if (autoBtn) autoBtn.onclick = autoPlace;
     view.querySelector('[data-act="addstop"]').onclick = () => {
       map.pickMode(async ({ lat, lon }) => {
         const name = prompt('Name of the new stop (a building, bridge or story):');
@@ -556,6 +559,58 @@
         },
       });
     });
+  }
+
+  // Which leg the boat passes a stop on (follows the workshop run of show), and a
+  // sort key for where it falls inside that leg.
+  const LEG1 = new Set(['wrigley', 'tribune', 'trump', 'ama', 'marina', 'reid-murdoch', 'themart']);
+  const LEG4 = new Set(['300-lasalle', 'riverwalk', 'nbc', 'aqua', 'st-regis', 'london-house', 'carbide', 'lake-point']);
+  function legForStop(stop) {
+    if (!stop) return null;
+    if (stop.id === 'welcome') return 'intro';
+    if (LEG1.has(stop.id)) return 'leg1';
+    if (LEG4.has(stop.id)) return 'leg4';
+    if (stop.id === '333-wacker' || stop.branch === 'north') return 'leg2';
+    if (stop.branch === 'south') return 'leg3';
+    return stop.lon > -87.6235 ? 'leg4' : 'leg1';
+  }
+  function routeKey(leg, stop) {
+    if (!stop) return 0;
+    if (leg === 'leg1') return -stop.lon; // heading west
+    if (leg === 'leg4') return stop.lon; // heading east to the lake
+    if (leg === 'leg2') return stop.id === '333-wacker' ? 99 : stop.lat; // north, 333 W Wacker on the way back
+    if (leg === 'leg3') return -stop.lat; // heading south
+    return 0;
+  }
+
+  // Put every unplaced stop that has a building into its leg, in river order.
+  async function autoPlace() {
+    await loadAdmin();
+    const ix = index();
+    const layout = JSON.parse(JSON.stringify(state.admin.layout));
+    const plan = [];
+    const skipped = [];
+    for (const id of ix.unscheduled) {
+      const { st, seg } = ix.segs.get(id);
+      const stop = stopById(seg.stopId);
+      const leg = legForStop(stop);
+      if (!leg || !layout[leg]) { skipped.push(`${st.name} (${seg.title || 'no stop chosen'})`); continue; }
+      const key = routeKey(leg, stop);
+      const list = layout[leg];
+      let at = list.findIndex((other) => routeKey(leg, stopById(ix.segs.get(other)?.seg.stopId)) > key);
+      if (at < 0) at = list.length;
+      list.splice(at, 0, id);
+      plan.push(`• ${st.name}: ${stop.short || stop.name} → ${state.admin.legs.find((l) => l.id === leg).name}`);
+    }
+    if (!plan.length) return toast(skipped.length ? 'Those stops need a building chosen before they can be placed.' : 'Nothing to place.');
+    const msg = `Place these ${plan.length} stop(s)?\n\n${plan.join('\n')}${skipped.length ? `\n\nLeft for you to place (no building chosen yet):\n${skipped.join('\n')}` : ''}\n\nYou can still drag them afterwards.`;
+    if (!confirm(msg)) return;
+    try {
+      await api('PUT', '/api/admin/layout', { layout });
+      await loadAdmin();
+      renderAdmin();
+      toast(`Placed ${plan.length} stop(s)`);
+    } catch (e) { toast(`Not saved: ${e.message}`); }
   }
 
   // Drawer: every stop of one student, editable by the admin.
