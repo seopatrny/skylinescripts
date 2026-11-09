@@ -53,6 +53,7 @@ Any Node 18+ host works.
 | `ADMIN_PASSWORD` | Guide login password |
 | `SESSION_SECRET` | Signs login cookies (otherwise one is generated and stored) |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Upstash / Vercel KV storage |
+| `KV_PREFIX` | Start of every database key (default `skylinescripts:`), so one Redis can be shared with other apps |
 | `DATA_FILE` | Path for file storage when not using KV |
 | `PORT` | Port for `npm start` (default 3000) |
 
