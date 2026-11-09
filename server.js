@@ -39,6 +39,14 @@ function init() {
           console.log(`\n  No ADMIN_PASSWORD set. Generated admin password: ${config.generatedAdminPassword}\n`);
         }
       }
+      // One-time update for sites created before these goals were set:
+      // WL/LL 1 min, L1 2 min, L2 3 min, MS 4 min per speaker.
+      if ((config.goalsVersion || 0) < 2) {
+        const goals = { wl: 60, l1: 120, l2: 180, ms: 240 };
+        for (const g of config.groups) if (goals[g.id]) g.targetSeconds = goals[g.id];
+        config.goalsVersion = 2;
+        await store.set('config', config);
+      }
       return true;
     })().catch((e) => {
       ready = null;

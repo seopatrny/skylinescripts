@@ -24,8 +24,8 @@ function unwrap(text) {
 
 const groups = [
   { id: 'wl', name: 'WL/LL', color: '#e0567a', targetSeconds: 60 },
-  { id: 'l1', name: 'L1', color: '#f0a020', targetSeconds: 90 },
-  { id: 'l2', name: 'L2', color: '#2aa876', targetSeconds: 120 },
+  { id: 'l1', name: 'L1', color: '#f0a020', targetSeconds: 120 },
+  { id: 'l2', name: 'L2', color: '#2aa876', targetSeconds: 180 },
   { id: 'ms', name: 'MS', color: '#3d6be0', targetSeconds: 240 },
   { id: 'none', name: 'Unassigned', color: '#8a8f9c', targetSeconds: 120 },
 ];
