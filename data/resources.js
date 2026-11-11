@@ -84,8 +84,27 @@ const byStop = {
     ],
   },
   'river-point': { year: 2017, architect: 'Pickard Chilton', stories: [] },
-  '150-riverside': { year: 2017, architect: 'Goettsch Partners', stories: [] },
-  '100-riverside': { year: 1990, architect: 'Perkins & Will', stories: [] },
+  '150-riverside': {
+    year: 2017, architect: 'Goettsch Partners',
+    stories: [
+      'This land is squeezed between the river and the railroad tracks. It was so narrow that for over 100 years nobody thought you could build anything worthwhile on it. Goettsch Partners figured out that if a building stood on a very narrow base, you could fit a 53-story tower here.',
+      'A narrow base means the building could sway in the wind. To stop that, about 160,000 gallons of water sit behind the glass near the top. When the building sways, the water sloshes back and forth a little slower than the building and calms the motion. These are called tuned sloshing dampers. The only other building in Chicago with this system is the St. Regis tower.',
+    ],
+  },
+  '100-riverside': {
+    year: 1990, architect: 'Perkins & Will',
+    stories: [
+      '100 North Riverside is the former Boeing headquarters. It is built right over railroad tracks, and the building pays about $1.3 million a year to lease the air space over them.',
+      'The architects had a problem: the southwest corner of the shorter part of the building sat right over switch tracks, which take up a lot of room. There was no space to dig a foundation or drill supports for that corner. Look at the top of the building and you will see big trusses. That corner has no foundation at all. It hangs from the trusses at the top instead of being held up from below. Perkins & Will sometimes sends architects to measure it and make sure the corner is still where it should be and not sagging.',
+    ],
+  },
+  '2-riverside': {
+    year: 1929, architect: 'Holabird & Root',
+    stories: [
+      'This was the first building in Chicago built on the "air rights" over railroad tracks. It was the headquarters of the Chicago Daily News, and the printing presses were on the lower floors, so the newspaper was actually printed right here.',
+      'It was also the first building designed from the start with a plaza along the river. Band concerts were held on the plaza in the 1930s, and it is still used for summer entertainment today.',
+    ],
+  },
   'boa-tower': { year: 2020, architect: 'Goettsch Partners', stories: [] },
   'civic-opera': {
     year: 1929, architect: 'Graham, Anderson, Probst & White',
@@ -95,11 +114,95 @@ const byStop = {
       'What did happen: the opera house opened in 1929, right when the stock market crashed and the Great Depression began. Insull lost his fortune. A few years later he died in a Paris subway station with only 84 cents in his pocket.',
     ],
   },
-  cme: { year: '1983 and 1987', architect: 'Fujikawa Johnson', stories: [] },
-  willis: { year: 1973, architect: 'Skidmore, Owings & Merrill', stories: [] },
-  '311-wacker': { year: 1990, architect: 'Kohn Pedersen Fox', stories: [] },
-  'post-office': { year: '1921, expanded 1932', architect: 'Graham, Anderson, Probst & White', stories: [] },
-  'river-city': { year: 1986, architect: 'Bertrand Goldberg', stories: ['Same architect as Marina City, and the same rule: no right angles. See the Marina City story.'] },
+  cme: {
+    year: '1983 and 1987', architect: 'Fujikawa Johnson',
+    stories: [
+      'The low middle part of the complex was built for trading floors. Today trading is mostly done on computers, so the middle is now offices.',
+      'The middle part gives the towers less support than they get on their outer sides, and the architects worried the towers might slowly tilt in toward the center. Their fix: from the 1st to the 21st floor, each floor of the towers sticks out toward the street by an extra 1/8 inch, and from the 22nd floor to the top each floor steps back toward the center. That tiny shift of weight did the trick. The towers don\'t tilt.',
+    ],
+  },
+  willis: {
+    year: 1973, architect: 'Skidmore, Owings & Merrill',
+    stories: [
+      'This building was first called the Sears Tower. The Willis insurance company bought the naming rights, so now it is the Willis Tower. It is the tallest building in Chicago and was the tallest in the world for about 25 years. Today more than 20 buildings around the world are taller.',
+      'The building is really nine separate square towers, arranged 3 by 3. Each is 75 feet by 75 feet, and they stop at different heights. This is called "bundled tube" construction: each tube supports its neighbors, which makes the building extremely strong. It was invented by Skidmore, Owings & Merrill\'s structural engineer, Fazlur Rahman Khan.',
+      'It has almost as many elevators as floors: 110 floors and about 100 elevators. Robot machines wash the windows so human window washers don\'t have to go up all 110 stories.',
+    ],
+  },
+  '311-wacker': {
+    year: 1990, architect: 'Kohn Pedersen Fox',
+    stories: [
+      'If your new building is right across the street from one of the tallest, most famous buildings in the world, how do you get it noticed? Look at the big round crown on top. Every night it is lit by about 1,400 fluorescent bulbs. Anywhere you can see it at night, it is the first building you notice, and then you see the Willis Tower right across the street.',
+      'The crown used to be even brighter, with more bulbs, but migrating birds kept flying into it, so the lights were turned down.',
+    ],
+  },
+  '300-wacker': {
+    year: 1971, architect: '',
+    stories: [
+      'Look at the river side of this building: there is a giant mural that is a map of the Chicago River. The red rectangle at the top stands for the building itself, so the tour guide calls it the "you are here" part of the map.',
+    ],
+  },
+  'post-office': {
+    year: '1921, expanded 1932', architect: 'Graham, Anderson, Probst & White',
+    stories: [
+      'When it was built, the Old Post Office was the largest post office in the world. Chicago needed it: the city was home to Montgomery Ward, Sears, Spiegel and Butler Brothers, all huge mail-order companies sending tons of packages every day.',
+      'It also has an expressway running right through the middle of it.',
+      'By the 1990s it was out of date as a post office, so the Post Office moved to a new building across the street. The old building sat empty for years. Today it may be the biggest and best example of "adaptive reuse" in Chicago: it is a beautiful, very successful office building.',
+      'As the tour guide tells it (we could not confirm every detail): the government auctioned the empty building, with a first bid of only $300,000. A British developer bought it for about $20 million but did nothing with it, until the city threatened to take it away. It was resold years later for a huge profit, and the story goes that the seller died soon after with no one to leave the money to. Who got all that money?',
+    ],
+  },
+  'river-city': {
+    year: 1986, architect: 'Bertrand Goldberg',
+    stories: [
+      'River City was designed by the same architect as Marina City, Bertrand Goldberg. His rule: "There are no right angles in nature, so there should be no right angles in architecture."',
+      'It was meant to be a village of three S-shaped buildings, but the city thought that many apartments would crowd the area, so only one was built. Today a very large development is going up just south of River City, so crowding isn\'t a worry anymore.',
+      'In 1986 this area was all industrial and almost nobody came here, so many people thought it was a mistake to build here. Today the South Loop is one of the most popular neighborhoods in Chicago.',
+    ],
+  },
+  'ohio-bridge-house': {
+    year: 1914, architect: '',
+    stories: [
+      'This tender house actually belongs to the Grand Avenue bridge. It and the Kinzie Street bridge just south of it are the only two single-leaf, fixed-trunnion bridges left in Chicago. The bridges on the North Branch don\'t go up and down anymore; they are fixed in place.',
+      'The bridge tender worked in this little house every day. When a ship came down the river, the tender used the controls inside to stop traffic and raise the bridge so the ship could pass.',
+      'Unlike the fancy stone tender houses on other bridges, this one is plain green wooden clapboard. It was restored in 1990 to show what the old tender houses really looked like: very basic.',
+    ],
+  },
+  'power-house': {
+    year: 1932, architect: 'Graham, Anderson, Probst & White',
+    stories: [
+      'You will notice this building is in pretty bad shape. It is the old power house for Union Station, about half a mile north.',
+      'In the old days many downtown buildings were not connected to a central power grid. They made their own electricity with generators in their basements. This power plant made the electricity for Union Station and the old Main Post Office. It is shut down now, but it was still supplying power as recently as the 1990s.',
+    ],
+  },
+  bmo: {
+    year: 2022, architect: 'Goettsch Partners',
+    stories: [
+      'Look for the big V-shaped supports on the river side of the building. They look a lot like the V shape at the base of 150 North Riverside, just up the river. That is probably not a coincidence: both buildings were designed by the same firm, Goettsch Partners.',
+    ],
+  },
+  'mcdonalds-park': {
+    year: 'Opening planned for 2028', architect: 'Gensler',
+    stories: [
+      'This is the site of the new stadium for the Chicago Fire, Chicago\'s professional soccer team. It is being built on a large piece of empty land called "The 78."',
+      'A few years ago Amazon looked at this land as a possible site for its second headquarters, but it chose other cities instead. The plan now is to fill the area with apartments and places to have fun.',
+      'Why "78"? Chicago is officially divided into 77 community areas. The developer wants this to become the 78th.',
+    ],
+  },
+  'amtrak-bridge': {
+    year: '1915', architect: '',
+    stories: [
+      'This vertical lift bridge is one of the oldest bridges on the river and the tallest, and after more than 110 years it looks it. Amtrak trains still use it every day.',
+      'In 2026 it was announced that the bridge will be renovated next year to bring it up to 21st-century standards. (The tour guide offered to share more about how it was built.)',
+    ],
+  },
+  riverwalk: {
+    year: '2009–2016', architect: 'Sasaki, Ross Barney Architects, and Jacobs/Ryan Associates',
+    stories: [
+      'The Riverwalk runs along the south side of the Main Branch. You can walk from where the river branches all the way to the lake without climbing up to the street to cross: the path goes under each bridge.',
+      'Chicago needed special permission from Congress to build it, because the walkways make the river a little narrower and the river is a federally controlled waterway.',
+      'Each block between bridges has its own theme, such as Marina Plaza, the Cove, the River Theater, the Jetty and the Boardwalk. There are places to eat, sit, enjoy the view, and even fish. The Main Branch now has about 70 kinds of fish.',
+    ],
+  },
   '333-wacker': {
     year: 1983, architect: 'Kohn Pedersen Fox',
     stories: [
