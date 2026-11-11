@@ -234,6 +234,23 @@ table.students .pin { font-family: ui-monospace, Menlo, monospace; font-weight: 
 .addrow { display: flex; gap: 10px; padding: 14px 16px; flex-wrap: wrap; align-items: end; border-top: 1px solid var(--line); }
 .addrow label { flex: 1; min-width: 160px; }
 
+/* ---------- guide progress (red / yellow / green) ---------- */
+:root { --r-red: #d93a3a; --r-yellow: #e8b21c; --r-green: #22a061; }
+.rate-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.rate-filter { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); border-radius: 99px; padding: 3px 11px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.rate-filter.on { border-color: var(--brand-2); background: color-mix(in srgb, var(--brand-2) 12%, var(--panel)); }
+.rdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; }
+.rdot.red { background: var(--r-red); } .rdot.yellow { background: var(--r-yellow); } .rdot.green { background: var(--r-green); }
+.rdot.none { background: transparent; border: 1.5px dashed var(--ink-3); }
+.rate-cell { min-width: 150px; }
+.rate-btns { display: flex; gap: 6px; }
+.rate { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid var(--line); background: var(--panel); position: relative; padding: 0; }
+.rate.red { border-color: var(--r-red); } .rate.yellow { border-color: var(--r-yellow); } .rate.green { border-color: var(--r-green); }
+.rate.on.red { background: var(--r-red); } .rate.on.yellow { background: var(--r-yellow); } .rate.on.green { background: var(--r-green); }
+.rate.on { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 12%, transparent); }
+.rate:hover { transform: scale(1.1); }
+.rate-note { margin-top: 6px; padding: 4px 8px !important; font-size: 13px; }
+
 /* ---------- stop picker ---------- */
 .stops-cell { min-width: 220px; }
 .stoppick-btn { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; width: 100%; min-height: 34px; text-align: left; padding: 4px 26px 4px 6px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); cursor: pointer; position: relative; }

@@ -228,14 +228,30 @@ app.put('/api/my/status', needStudent, wrap(async (req, res) => {
 app.get('/api/admin/state', needAdmin, wrap(async (req, res) => {
   const { groups, legs, layout, customStops } = req.config;
   const students = await allStudents(req.config);
-  res.json({ groups, legs, layout, customStops, stops: stopsOf(req.config), students, storage: store.kind });
+  const ratings = (await store.get('ratings')) || {};
+  res.json({ groups, legs, layout, customStops, stops: stopsOf(req.config), students, ratings, storage: store.kind });
+}));
+
+// Guide-only red / yellow / green progress tracking. Kept in its own record so
+// student saves never touch it and students never see it.
+app.put('/api/admin/ratings/:id', needAdmin, wrap(async (req, res) => {
+  if (!req.config.studentIds.includes(req.params.id)) return res.status(404).json({ error: 'Student not found.' });
+  const ratings = (await store.get('ratings')) || {};
+  const prev = ratings[req.params.id] || {};
+  const color = ['red', 'yellow', 'green'].includes(req.body.color) ? req.body.color : req.body.color === null ? null : prev.color || null;
+  const note = req.body.note !== undefined ? clip(String(req.body.note), 300) : prev.note || '';
+  if (!color && !note) delete ratings[req.params.id];
+  else ratings[req.params.id] = { color, note, updatedAt: new Date().toISOString() };
+  await store.set('ratings', ratings);
+  res.json(ratings[req.params.id] || null);
 }));
 
 app.get('/api/admin/export', needAdmin, wrap(async (req, res) => {
   const { sessionSecret, generatedAdminPassword, ...config } = req.config;
   const students = await allStudents(req.config);
   res.setHeader('Content-Disposition', `attachment; filename="skyline-speakers-${new Date().toISOString().slice(0, 10)}.json"`);
-  res.json({ exportedAt: new Date().toISOString(), config, students });
+  const ratings = (await store.get('ratings')) || {};
+  res.json({ exportedAt: new Date().toISOString(), config, students, ratings });
 }));
 
 // Replace everything with a backup file (from "Download backup" or `npm run make-import`).
@@ -273,6 +289,11 @@ app.post('/api/admin/import', needAdmin, wrap(async (req, res) => {
   config.layout = inc.layout || {};
   config.customStops = inc.customStops || [];
   await saveConfig(config);
+  if (req.body.ratings && typeof req.body.ratings === 'object') {
+    const kept = {};
+    for (const id of ids) if (req.body.ratings[id]) kept[id] = req.body.ratings[id];
+    await store.set('ratings', kept);
+  }
   res.json({ students: ids.length });
 }));
 

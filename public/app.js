@@ -453,7 +453,7 @@
       <span class="bar" style="background:${esc(g.color)}"></span>
       <div><div class="t1">${esc(stop ? stop.short || stop.name : seg.title || 'No stop chosen')}</div>
         <div class="t2">${esc(st.name)} · ${esc(g.name)}</div></div>
-      <div class="meta"><span>${fmt(secs(seg.text))}</span><span class="status ${esc(st.status)}">${esc(st.status.replace('-', ' '))}</span></div>
+      <div class="meta"><span>${state.admin.ratings?.[st.id]?.color ? `<span class="rdot ${esc(state.admin.ratings[st.id].color)}" title="Guide progress rating"></span> ` : ''}${fmt(secs(seg.text))}</span><span class="status ${esc(st.status)}">${esc(st.status.replace('-', ' '))}</span></div>
     </div>`;
   }
 
@@ -767,7 +767,13 @@
   // ---------- students ----------
   function renderStudents(view) {
     view = freshView(view);
-    const list = [...state.admin.students].sort((a, b) => a.name.localeCompare(b.name));
+    const ratings = state.admin.ratings || {};
+    const colorOf = (id) => ratings[id]?.color || 'none';
+    const all = [...state.admin.students].sort((a, b) => a.name.localeCompare(b.name));
+    const filter = state.rateFilter || 'all';
+    const list = filter === 'all' ? all : all.filter((s) => colorOf(s.id) === filter);
+    const count = (c) => all.filter((s) => colorOf(s.id) === c).length;
+    const RATE_LABEL = { red: 'Needs help', yellow: 'In progress', green: 'On track', none: 'Not rated' };
     view.innerHTML = `
       <div class="panel">
         <div class="panel-head"><h2>Students (${list.length})</h2><span class="muted" style="font-size:13px">Students pick their name and type their password (last name + 2026). Click a password to change it.</span>
@@ -776,17 +782,23 @@
           <button class="btn small" data-act="cards">Print login cards</button>
           <a class="btn small" href="/api/admin/export" download>Download backup</a>
           <label class="btn small" title="Load a backup or roster file">Import…<input type="file" accept=".json,application/json" data-act="import" hidden></label></div>
+        <div class="rate-bar">
+          <span class="muted" style="font-size:13px;font-weight:600">Script progress (only guides see this):</span>
+          ${['all', 'red', 'yellow', 'green', 'none'].map((c) => `<button type="button" class="rate-filter${filter === c ? ' on' : ''}" data-rf="${c}">${c === 'all' ? `All ${all.length}` : `<span class="rdot ${c}"></span>${RATE_LABEL[c]} ${count(c)}`}</button>`).join('')}
+        </div>
         <div class="table-wrap"><table class="students">
-          <thead><tr><th>Name</th><th>Group</th><th>Password</th><th>Stops</th><th>Time</th><th>Status</th><th>Last edit</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Progress</th><th>Group</th><th>Password</th><th>Stops</th><th>Time</th><th>Status</th><th>Last edit</th><th></th></tr></thead>
           <tbody>${list.map((s) => {
             const t = s.segments.reduce((a, x) => a + secs(x.text), 0);
             const g = groupById(s.group);
             return `<tr data-sid="${esc(s.id)}">
               <td><b>${esc(s.name)}</b><div class="muted" style="font-size:12.5px">${esc(s.email || '')}</div></td>
+              <td class="rate-cell"><div class="rate-btns" role="radiogroup" aria-label="Progress for ${esc(s.name)}">${['red', 'yellow', 'green'].map((c) => `<button type="button" class="rate ${c}${colorOf(s.id) === c ? ' on' : ''}" data-act="rate" data-c="${c}" role="radio" aria-checked="${colorOf(s.id) === c}" title="${RATE_LABEL[c]}"></button>`).join('')}</div>
+                <input type="text" class="rate-note" data-rnote maxlength="300" placeholder="Note…" value="${esc(ratings[s.id]?.note || '')}"></td>
               <td style="white-space:nowrap"><span class="dot" style="background:${esc(g.color)}"></span> <select data-sf="group">${state.admin.groups.map((x) => `<option value="${esc(x.id)}"${x.id === s.group ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></td>
               <td style="white-space:nowrap"><button type="button" class="pin pin-edit" data-act="setpw" title="Change password">${esc(s.pin)}</button> <button class="btn small ghost" data-act="reset" title="Reset to last name + 2026">↻</button></td>
               <td class="stops-cell">${stopPickButton(s)}</td>
-              <td style="font-variant-numeric:tabular-nums">${fmt(t)} <span class="muted">/ ${fmt(g.targetSeconds)}</span></td>
+              <td style="font-variant-numeric:tabular-nums;white-space:nowrap">${fmt(t)} <span class="muted">/ ${fmt(g.targetSeconds)}</span></td>
               <td><select data-sf="status">${['not-started', 'draft', 'ready'].map((x) => `<option${x === s.status ? ' selected' : ''} value="${x}">${x.replace('-', ' ')}</option>`).join('')}</select></td>
               <td class="muted">${esc(ago(s.updatedAt))}</td>
               <td style="white-space:nowrap"><button class="btn small" data-act="open">Scripts</button> <button class="btn small ghost danger" data-act="del" title="Remove student">✕</button></td>
@@ -801,6 +813,21 @@
         </form>
       </div>
       <p class="muted" style="font-size:13px">Data is stored in ${state.admin.storage === 'redis' ? 'the hosted key-value database' : 'a file on this server (data/db.json)'}.</p>`;
+    view.querySelectorAll('[data-rf]').forEach((b) => (b.onclick = () => { state.rateFilter = b.dataset.rf; renderStudents(view); }));
+    const saveRating = async (id, patch) => {
+      try {
+        const r = await api('PUT', `/api/admin/ratings/${encodeURIComponent(id)}`, patch);
+        state.admin.ratings = state.admin.ratings || {};
+        if (r) state.admin.ratings[id] = r; else delete state.admin.ratings[id];
+        return true;
+      } catch (ex) { toast(`Not saved: ${ex.message}`); return false; }
+    };
+    const noteSavers = {};
+    view.addEventListener('input', (e) => {
+      if (!e.target.matches('[data-rnote]')) return;
+      const id = e.target.closest('[data-sid]').dataset.sid;
+      (noteSavers[id] ||= debounce((v) => saveRating(id, { note: v }), 600))(e.target.value);
+    });
     view.querySelector('[data-act="resetall"]').onclick = async () => {
       if (!confirm('Set EVERY student\'s password to their last name + 2026 (for example smith2026)?')) return;
       try {
@@ -839,6 +866,11 @@
       if (!btn || !row) return;
       const st = state.admin.students.find((s) => s.id === row.dataset.sid);
       if (btn.dataset.act === 'open') openStudentDrawer(st.id);
+      if (btn.dataset.act === 'rate') {
+        const cur = state.admin.ratings?.[st.id]?.color || null;
+        const next = cur === btn.dataset.c ? null : btn.dataset.c;
+        if (await saveRating(st.id, { color: next })) renderStudents(view);
+      }
       if (btn.dataset.act === 'stops') openStopPicker(btn, st, () => { row.querySelector('.stops-cell').innerHTML = stopPickButton(st); });
       if (btn.dataset.act === 'reset') {
         Object.assign(st, await api('PUT', `/api/admin/students/${st.id}`, { resetPin: true }));
